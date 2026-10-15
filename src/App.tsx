@@ -2,6 +2,7 @@ import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { Layout } from './components/Layout'
+import { Toaster } from './components/ui/toaster'
 import { Login } from './pages/Login'
 import { ForgotPassword } from './pages/ForgotPassword'
 import { ResetPassword } from './pages/ResetPassword'
@@ -24,8 +25,9 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; adminOnly?: boolean 
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8FAFC] gap-3">
         <div className="w-8 h-8 border-4 border-[#1CA0D8] border-t-transparent rounded-full animate-spin" />
+        <span className="text-xs text-[#5B6B78] font-medium">Carregando Beluga Piscinas...</span>
       </div>
     )
   }
@@ -56,8 +58,9 @@ const PublicOnlyRoute: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8FAFC] gap-3">
         <div className="w-8 h-8 border-4 border-[#1CA0D8] border-t-transparent rounded-full animate-spin" />
+        <span className="text-xs text-[#5B6B78] font-medium">Carregando...</span>
       </div>
     )
   }
@@ -186,6 +189,7 @@ export function App() {
         {/* 404 */}
         <Route path="*" element={<NotFound />} />
       </Routes>
+      <Toaster />
     </AuthProvider>
   )
 }

@@ -24,7 +24,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [token, setToken] = useState<string | null>(pb.authStore.token)
   const [isLoading, setIsLoading] = useState(() => {
     // Se o authStore não tem token ou não é válido, não há nada a esperar
-    return pb.authStore.isValid && !!pb.authStore.record
+    return false
   })
 
   const refreshUser = async () => {
@@ -49,19 +49,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   useEffect(() => {
+    let isMounted = true
+
     if (pb.authStore.isValid && pb.authStore.record) {
-      refreshUser().finally(() => setIsLoading(false))
+      // Já inicializa imediatamente com os dados locais do authStore para evitar flicker ou travamento
+      setUser(pb.authStore.record as unknown as User)
+      setToken(pb.authStore.token)
+
+      // Atualiza em background sem prender a interface
+      refreshUser()
+        .catch(() => {})
+        .finally(() => {
+          if (isMounted) setIsLoading(false)
+        })
     } else {
       setIsLoading(false)
     }
 
     const unsubscribe = pb.authStore.onChange((newToken, record) => {
-      setToken(newToken)
-      setUser((record as unknown as User) || null)
-      setIsLoading(false)
+      if (isMounted) {
+        setToken(newToken)
+        setUser((record as unknown as User) || null)
+        setIsLoading(false)
+      }
     })
 
     return () => {
+      isMounted = false
       unsubscribe()
     }
   }, [])
