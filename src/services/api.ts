@@ -27,7 +27,7 @@ export const clientService = {
 }
 
 export const poolModelService = {
-  async list(filter = '', sort = 'name'): Promise<PoolModel[]> {
+  async list(filter = '', sort = 'catalog_page,name'): Promise<PoolModel[]> {
     return pb.collection('pool_models').getFullList<PoolModel>({
       filter,
       sort,

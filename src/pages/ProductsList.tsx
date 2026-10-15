@@ -54,10 +54,14 @@ export const ProductsList: React.FC = () => {
     fetchItems()
   }, [])
 
-  useRealtime<OptionalItem>('optional_items', {
-    onCreate: (rec) => setItems((prev) => [rec, ...prev.filter((i) => i.id !== rec.id)]),
-    onUpdate: (rec) => setItems((prev) => prev.map((i) => (i.id === rec.id ? rec : i))),
-    onDelete: (rec) => setItems((prev) => prev.filter((i) => i.id !== rec.id)),
+  useRealtime<OptionalItem>('optional_items', (e) => {
+    if (e.action === 'create') {
+      setItems((prev) => [e.record, ...prev.filter((i) => i.id !== e.record.id)])
+    } else if (e.action === 'update') {
+      setItems((prev) => prev.map((i) => (i.id === e.record.id ? e.record : i)))
+    } else if (e.action === 'delete') {
+      setItems((prev) => prev.filter((i) => i.id !== e.record.id))
+    }
   })
 
   const handleOpenCreate = () => {

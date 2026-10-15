@@ -15,9 +15,17 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<User | null>(() => {
+    if (pb.authStore.isValid && pb.authStore.record) {
+      return pb.authStore.record as unknown as User
+    }
+    return null
+  })
   const [token, setToken] = useState<string | null>(pb.authStore.token)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(() => {
+    // Se o authStore não tem token ou não é válido, não há nada a esperar
+    return pb.authStore.isValid && !!pb.authStore.record
+  })
 
   const refreshUser = async () => {
     if (pb.authStore.isValid && pb.authStore.record) {
@@ -26,7 +34,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(record)
         setToken(pb.authStore.token)
       } catch (_) {
-        setUser(pb.authStore.record as unknown as User)
+        // Se a chamada falhou mas o authStore tem o record em cache local, mantém
+        if (pb.authStore.record) {
+          setUser(pb.authStore.record as unknown as User)
+        } else {
+          setUser(null)
+          setToken(null)
+        }
       }
     } else {
       setUser(null)
@@ -35,11 +49,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   useEffect(() => {
-    refreshUser().finally(() => setIsLoading(false))
+    if (pb.authStore.isValid && pb.authStore.record) {
+      refreshUser().finally(() => setIsLoading(false))
+    } else {
+      setIsLoading(false)
+    }
 
     const unsubscribe = pb.authStore.onChange((newToken, record) => {
       setToken(newToken)
-      setUser(record as unknown as User)
+      setUser((record as unknown as User) || null)
+      setIsLoading(false)
     })
 
     return () => {
