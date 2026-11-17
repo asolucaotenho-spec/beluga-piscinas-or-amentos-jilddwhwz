@@ -35,18 +35,39 @@ export const BudgetReview: React.FC = () => {
   const [updatingStatus, setUpdatingStatus] = useState(false)
 
   useEffect(() => {
-    if (!id)
-      return budgetService
+    if (!id) {
+      setLoading(false)
+      return
+    }
+
+    let cancelled = false
+
+    // O useEffect não pode ser async: disparamos a busca por uma função
+    // síncrona e cancelamos o estado se o componente desmontar/trocar de id.
+    const loadBudget = () => {
+      budgetService
         .getById(id)
-        .then((data) => setBudget(data))
-        .catch((err) => {
+        .then((data) => {
+          if (!cancelled) setBudget(data)
+        })
+        .catch((err: any) => {
+          if (cancelled) return
           toast({
             title: 'Erro ao carregar orçamento',
             description: err.message,
             variant: 'destructive',
           })
         })
-        .finally(() => setLoading(false))
+        .finally(() => {
+          if (!cancelled) setLoading(false)
+        })
+    }
+
+    loadBudget()
+
+    return () => {
+      cancelled = true
+    }
   }, [id])
 
   if (loading) {

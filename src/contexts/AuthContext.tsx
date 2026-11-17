@@ -14,6 +14,21 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+// Intervalo entre renovações silenciosas do token de sessão (12h).
+// O token em si dura 24h (migração 0004), então um refresh a cada 12h
+// garante que o usuário nunca precise relogar enquanto usar o sistema.
+const REFRESH_INTERVAL_MS = 12 * 60 * 60 * 1000
+// No retorno de foco/visibilidade da aba, só renova se o último refresh
+// tem mais de 1h — evita requisições redundantes a cada clique.
+const FOCUS_REFRESH_MIN_MS = 60 * 60 * 1000
+// Retardo inicial da primeira renovação (30s após o boot), para não
+// competir com o carregamento das telas.
+const FIRST_REFRESH_DELAY_MS = 30 * 1000
+
+// Marca o instante da última renovação bem ou mal sucedida (module-scope
+// para sobreviver às montagens/desmontagens do StrictMode)
+let lastRefreshAt = 0
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => {
     if (pb.authStore.isValid && pb.authStore.record) {
@@ -55,13 +70,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Já inicializa imediatamente com os dados locais do authStore para evitar flicker ou travamento
       setUser(pb.authStore.record as unknown as User)
       setToken(pb.authStore.token)
-
-      // Atualiza em background sem prender a interface
-      refreshUser()
-        .catch(() => {})
-        .finally(() => {
-          if (isMounted) setIsLoading(false)
-        })
+      setIsLoading(false)
     } else {
       setIsLoading(false)
     }
@@ -77,6 +86,72 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       isMounted = false
       unsubscribe()
+    }
+  }, [])
+
+  /**
+   * Renovação silenciosa da sessão: mantém o token válido por tempo
+   * indefinido enquanto o usuário volta ao sistema dentro da janela de
+   * 24h do authToken (migração 0004). Roda em segundo plano — nunca
+   * desloga por falha de rede; se o refresh expirar de verdade, o
+   * authStore fica inválido e o login é pedido só na próxima navegação.
+   */
+  useEffect(() => {
+    if (!pb.authStore.isValid) return
+
+    let timer: ReturnType<typeof setTimeout> | null = null
+
+    // Renova o token. Em falha de rede apenas agenda nova tentativa —
+    // só limpa a sessão se o backend responder que o token expirou (400/401).
+    const renew = async () => {
+      if (!pb.authStore.isValid || !pb.authStore.record) return
+      lastRefreshAt = Date.now()
+      try {
+        await pb.collection('users').authRefresh()
+      } catch (err: any) {
+        const status = err?.status ?? err?.response?.status
+        if (status !== 400 && status !== 401) return // falha transitória: tenta de novo depois
+        // Token realmente expirado: tenta uma última vez e, persistindo, limpa
+        try {
+          await pb.collection('users').authRefresh()
+        } catch {
+          pb.authStore.clear()
+        }
+      }
+    }
+
+    const scheduleNext = (ms: number) => {
+      if (timer) clearTimeout(timer)
+      timer = setTimeout(() => {
+        if (pb.authStore.isValid) {
+          renew().finally(() => scheduleNext(REFRESH_INTERVAL_MS))
+        }
+      }, ms)
+    }
+
+    // Primeira renovação 30s após o boot, depois a cada 12h
+    scheduleNext(FIRST_REFRESH_DELAY_MS)
+
+    // Ao voltar o foco da aba ou retomar a interação, renova se o último
+    // refresh passou de 1h — cobre o caso de fechar/reabrir o app no dia seguinte
+    const maybeRefreshOnFocus = () => {
+      if (!pb.authStore.isValid) return
+      if (Date.now() - lastRefreshAt >= FOCUS_REFRESH_MIN_MS) {
+        lastRefreshAt = Date.now()
+        renew()
+      }
+    }
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') maybeRefreshOnFocus()
+    }
+
+    window.addEventListener('focus', maybeRefreshOnFocus)
+    document.addEventListener('visibilitychange', onVisibility)
+
+    return () => {
+      if (timer) clearTimeout(timer)
+      window.removeEventListener('focus', maybeRefreshOnFocus)
+      document.removeEventListener('visibilitychange', onVisibility)
     }
   }, [])
 
