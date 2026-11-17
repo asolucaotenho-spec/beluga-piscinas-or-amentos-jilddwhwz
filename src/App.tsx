@@ -1,8 +1,9 @@
 import React from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { Layout } from './components/Layout'
 import { Toaster } from './components/ui/toaster'
+import { GlobalErrorBoundary } from './components/GlobalErrorBoundary'
 import { Login } from './pages/Login'
 import { ForgotPassword } from './pages/ForgotPassword'
 import { ResetPassword } from './pages/ResetPassword'
@@ -75,120 +76,124 @@ const PublicOnlyRoute: React.FC<{ children: React.ReactNode }> = ({ children }) 
 export function App() {
   return (
     <AuthProvider>
-      <Routes>
-        {/* Rotas Públicas */}
-        <Route
-          path="/login"
-          element={
-            <PublicOnlyRoute>
-              <Login />
-            </PublicOnlyRoute>
-          }
-        />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
+      <GlobalErrorBoundary>
+        <BrowserRouter>
+          <Routes>
+            {/* Rotas Públicas */}
+            <Route
+              path="/login"
+              element={
+                <PublicOnlyRoute>
+                  <Login />
+                </PublicOnlyRoute>
+              }
+            />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
-        {/* Rotas Protegidas no Layout */}
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Index />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/budgets"
-          element={
-            <ProtectedRoute>
-              <BudgetsList />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/budgets/new"
-          element={
-            <ProtectedRoute>
-              <BudgetWizard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/budgets/:id"
-          element={
-            <ProtectedRoute>
-              <BudgetReview />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/models"
-          element={
-            <ProtectedRoute>
-              <ModelsList />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/models/:id"
-          element={
-            <ProtectedRoute>
-              <ModelDetail />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/products"
-          element={
-            <ProtectedRoute>
-              <ProductsList />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/clients"
-          element={
-            <ProtectedRoute>
-              <ClientsList />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/settings"
-          element={
-            <ProtectedRoute adminOnly>
-              <SettingsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/settings/*"
-          element={
-            <ProtectedRoute adminOnly>
-              <SettingsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/review"
-          element={
-            <ProtectedRoute adminOnly>
-              <ModelsList />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/budgets"
-          element={
-            <ProtectedRoute adminOnly>
-              <BudgetsList />
-            </ProtectedRoute>
-          }
-        />
+            {/* Rotas Protegidas no Layout */}
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Index />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/budgets"
+              element={
+                <ProtectedRoute>
+                  <BudgetsList />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/budgets/new"
+              element={
+                <ProtectedRoute>
+                  <BudgetWizard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/budgets/:id"
+              element={
+                <ProtectedRoute>
+                  <BudgetReview />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/models"
+              element={
+                <ProtectedRoute>
+                  <ModelsList />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/models/:id"
+              element={
+                <ProtectedRoute>
+                  <ModelDetail />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/products"
+              element={
+                <ProtectedRoute>
+                  <ProductsList />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/clients"
+              element={
+                <ProtectedRoute>
+                  <ClientsList />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute adminOnly>
+                  <SettingsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings/*"
+              element={
+                <ProtectedRoute adminOnly>
+                  <SettingsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/review"
+              element={
+                <ProtectedRoute adminOnly>
+                  <ModelsList />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/budgets"
+              element={
+                <ProtectedRoute adminOnly>
+                  <BudgetsList />
+                </ProtectedRoute>
+              }
+            />
 
-        {/* 404 */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+            {/* 404 */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </GlobalErrorBoundary>
       <Toaster />
     </AuthProvider>
   )
