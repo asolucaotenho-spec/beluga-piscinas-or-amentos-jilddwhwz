@@ -6,7 +6,7 @@ import type { Budget, BudgetStatus } from '@/types/beluga'
 import { PdfDocument } from '@/components/PdfDocument'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
-import pb from '@/lib/pocketbase/client'
+import { buildClientWhatsAppLink } from '@/lib/whatsapp'
 import {
   FileText,
   Edit,
@@ -35,18 +35,18 @@ export const BudgetReview: React.FC = () => {
   const [updatingStatus, setUpdatingStatus] = useState(false)
 
   useEffect(() => {
-    if (!id) return
-    budgetService
-      .getById(id)
-      .then((data) => setBudget(data))
-      .catch((err) => {
-        toast({
-          title: 'Erro ao carregar orçamento',
-          description: err.message,
-          variant: 'destructive',
+    if (!id)
+      return budgetService
+        .getById(id)
+        .then((data) => setBudget(data))
+        .catch((err) => {
+          toast({
+            title: 'Erro ao carregar orçamento',
+            description: err.message,
+            variant: 'destructive',
+          })
         })
-      })
-      .finally(() => setLoading(false))
+        .finally(() => setLoading(false))
   }, [id])
 
   if (loading) {
@@ -107,8 +107,9 @@ export const BudgetReview: React.FC = () => {
     }
   }
 
-  // Compartilhar WhatsApp
-  const handleShareWhatsApp = () => {
+  // Compartilhar WhatsApp (usa o número base da equipe das configurações,
+  // padrão 48 99110-4301, como contato remetente na mensagem)
+  const handleShareWhatsApp = async () => {
     let clientPhone = ''
     try {
       if (budget.client_snapshot) {
@@ -119,17 +120,10 @@ export const BudgetReview: React.FC = () => {
       /* intentionally ignored */
     }
 
-    const digits = clientPhone.replace(/\D/g, '')
-    const cleanPhone = digits.length >= 10 && !digits.startsWith('55') ? `55${digits}` : digits
-
-    const message = encodeURIComponent(
+    const waUrl = await buildClientWhatsAppLink(
+      clientPhone,
       `Olá! Segue a proposta comercial da Beluga Piscinas (Orçamento nº ${budget.number}). Ficamos à total disposição para realizar seu projeto!`,
     )
-
-    const waUrl = cleanPhone
-      ? `https://wa.me/${cleanPhone}?text=${message}`
-      : `https://wa.me/?text=${message}`
-
     window.open(waUrl, '_blank')
   }
 
@@ -245,7 +239,7 @@ export const BudgetReview: React.FC = () => {
 
           <Button
             variant="outline"
-            onClick={handleShareWhatsApp}
+            onClick={() => handleShareWhatsApp()}
             className="h-11 border-emerald-600 text-emerald-700 hover:bg-emerald-50 rounded-xl text-xs font-bold gap-2"
           >
             <MessageCircle className="h-4 w-4 text-emerald-600" />

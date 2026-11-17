@@ -66,6 +66,7 @@ export const SettingsPage: React.FC = () => {
   const [branding, setBranding] = useState({
     company_name: 'Beluga Piscinas',
     phone: '48 99110-4301',
+    whatsapp_number: '48 99110-4301',
     website: 'www.piscinasbeluga.com.br',
     instagram: '@BELUGAPISCINASSSANTACATARINA',
     factory_location: 'Taquara/RS',
@@ -90,7 +91,13 @@ export const SettingsPage: React.FC = () => {
       if (sMap.delivery_deadline) setDeliveryDeadline(sMap.delivery_deadline.text || 'A combinar')
       if (sMap.client_responsibilities) setClientResponsibilities(sMap.client_responsibilities)
       if (sMap.included_items) setIncludedItems(sMap.included_items)
-      if (sMap.branding) setBranding(sMap.branding)
+      if (sMap.branding)
+        setBranding((prev) => ({
+          ...prev,
+          ...sMap.branding,
+          // Número base de WhatsApp da equipe — padrão 48 99110-4301
+          whatsapp_number: sMap.branding.whatsapp_number || prev.whatsapp_number,
+        }))
     } catch (err: any) {
       toast({
         title: 'Erro ao carregar configurações',
@@ -165,7 +172,12 @@ export const SettingsPage: React.FC = () => {
   const handleSaveBranding = async () => {
     setSaving(true)
     try {
-      await settingsService.set('branding', branding)
+      // Garante que o número base de WhatsApp da equipe nunca fique vazio
+      // (padrão 48 99110-4301, usado nos links wa.me das propostas)
+      await settingsService.set('branding', {
+        ...branding,
+        whatsapp_number: branding.whatsapp_number?.trim() || '48 99110-4301',
+      })
       toast({ title: 'Dados da marca atualizados com sucesso' })
     } catch (err: any) {
       toast({ title: 'Erro ao salvar', description: err.message, variant: 'destructive' })
@@ -527,6 +539,22 @@ export const SettingsPage: React.FC = () => {
                   onChange={(e) => setBranding({ ...branding, company_name: e.target.value })}
                   className="h-10 text-xs"
                 />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">
+                  WhatsApp Base da Equipe (links enviados ao cliente)
+                </Label>
+                <Input
+                  value={branding.whatsapp_number || ''}
+                  onChange={(e) => setBranding({ ...branding, whatsapp_number: e.target.value })}
+                  placeholder="48 99110-4301"
+                  className="h-10 text-xs"
+                />
+                <p className="text-[11px] text-[#5B6B78]">
+                  Número usado como contato/remetente nos links de WhatsApp das propostas. Padrão:
+                  48 99110-4301.
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
