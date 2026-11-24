@@ -1,0 +1,31 @@
+{
+  "name": "NOME DO CLIENTE",
+  "slug": "nome-do-cliente",
+  "nicho": "descreva o nicho/produto",
+  "palette": {
+    "accent": "#F6B404",
+    "accent_2": "#FFE27A",
+    "text": "#F4EFE6",
+    "shadow": "#0B0B0C",
+    "ghost": "#BFBFBF"
+  },
+  "familia": "impacto",
+  "intensidade": "equilibrado",
+  "look": "golden",
+  "fontes": {
+    "sans": "Inter",
+    "serif_italic": "Instrument Serif",
+    "condensada": "Anton"
+  },
+  "trilha": {
+    "genero": "trap leve / hip-hop moderno",
+    "bpm": "120-140",
+    "fonte_licenca": "biblioteca licenciada do cliente",
+    "nivel_db": -20
+  },
+  "sfx": "padrao",
+  "cta_padrao": "comenta PALAVRA",
+  "elementos_tematicos": [],
+  "proibido": [],
+  "_obs": "Valores de palette acima são o PADRÃO das referências (ouro). Substitua pelas cores oficiais do cliente — nunca invente."
+}
